@@ -136,11 +136,11 @@ def add_log(state, msg):
 
 def check_game_over_and_settle(state):
     if len(state["deck"]) == 0 and not state["game_over"]:
-        p1_has_power = any(
-            c[0] in ["J", "A", "Q", "K", "JOKER"] for c in state["p1_hand"]
+       p1_has_power = any(
+            c[0] in ["+1 AP", "All Swap", "Single Swap", "Push", "Steal", "Destroy", "Chaos Card"] for c in state["p1_hand"]
         )
         p2_has_power = any(
-            c[0] in ["J", "A", "Q", "K", "JOKER"] for c in state["p2_hand"]
+            c[0] in ["+1 AP", "All Swap", "Single Swap", "Push", "Steal", "Destroy", "Chaos Card"] for c in state["p2_hand"]
         )
         
         both_staging_empty = (len(state["p1_staging"]) == 0) and (len(state["p2_staging"]) == 0)
@@ -391,9 +391,8 @@ def render_player_column(target_is_p1):
                             staging.append(card)
                             add_log(state, f"{p_name} drew number card [{card[0]}-{card[1]}], entered staging area.")
                             check_auto_same_color_match(state, target_is_p1)
-                        elif card[0] == "JOKER":
-                            st.warning(f"🃏 {p_name} drew a JOKER card! Chaos effect triggered!")
-                            auto_joker_transfer(state, target_is_p1)
+                        elif card[0] == "Chaos Card":
+                            auto_chaos_transfer(state, target_is_p1)
                         else:
                             hand.append(card)
                             add_log(state, f"{p_name} drew tactical card [{card[0]}].")
