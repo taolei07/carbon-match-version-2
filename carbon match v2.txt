@@ -135,26 +135,33 @@ def add_log(state, msg):
 
 
 def check_game_over_and_settle(state):
+    # 当牌堆抽空且游戏尚未标记为结束时触发检查
     if len(state["deck"]) == 0 and not state["game_over"]:
-       p1_has_power = any(
+        # 检查双方手牌中是否还残留功能/战术卡
+        p1_has_power = any(
             c[0] in ["+1 AP", "All Swap", "Single Swap", "Push", "Steal", "Destroy", "Chaos Card"] for c in state["p1_hand"]
         )
         p2_has_power = any(
             c[0] in ["+1 AP", "All Swap", "Single Swap", "Push", "Steal", "Destroy", "Chaos Card"] for c in state["p2_hand"]
         )
         
+        # 双方暂存区是否都空了
         both_staging_empty = (len(state["p1_staging"]) == 0) and (len(state["p2_staging"]) == 0)
 
+        # 满足结束条件：双方都用完功能卡 或 双方暂存区全空
         if (not p1_has_power and not p2_has_power) or both_staging_empty:
             state["game_over"] = True
             p1_s = state["p1_score"]
             p2_s = state["p2_score"]
+            
+            # 判定胜者
             if p1_s > p2_s:
                 winner = "Player 1"
             elif p2_s > p1_s:
                 winner = "Player 2"
             else:
                 winner = "Draw"
+                
             add_log(
                 state,
                 f"🏁 【Game Over】Final Settlement: Player 1 Score {p1_s}, Player 2 Score {p2_s}. Winner: [{winner}]!",
