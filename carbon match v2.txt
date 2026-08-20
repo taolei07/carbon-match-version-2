@@ -290,7 +290,7 @@ with top_l:
     st.title("🃏 Carbon Match: Carbon Showdown (Online)")
     st.caption(
         f"Room: {room_code} ｜ You are: {my_player_name} ｜ "
-        "Rules: J (+1AP); A (All Staging Swap); Q (Single Swap); K (Push); JOKER (Auto Transfer Highest Score Pair)."
+        "Rules: +1 AP, All Swap, Single Swap, Push, Steal, Destroy, Chaos Card."
     )
 with top_r:
     if st.button("🚪 Leave Room"):
@@ -455,7 +455,7 @@ def render_player_column(target_is_p1):
                         if st.button(f"Play #{h_idx+1}", key=f"play_{p_name}_{h_idx}"):
                             ctype = hcard[0]
                             
-                            # 1. +1 AP 卡 (原 J 卡)
+                            # 1. +1 AP (原 J 卡)
                             if ctype == "+1 AP":
                                 hand.pop(h_idx)
                                 state["ap"] += 1
@@ -464,7 +464,7 @@ def render_player_column(target_is_p1):
                                 save_game(room_code, state)
                                 st.rerun()
                                 
-                            # 2. All Swap 卡 (原 A 卡)
+                            # 2. All Swap (原 A 卡)
                             elif ctype == "All Swap":
                                 if state["ap"] > 0:
                                     hand.pop(h_idx)
@@ -482,7 +482,7 @@ def render_player_column(target_is_p1):
                                 else:
                                     st.warning("⚠️ Insufficient AP!")
                                     
-                            # 3. Single Swap 卡 (原 Q 卡)
+                            # 3. Single Swap (原 Q 卡)
                             elif ctype == "Single Swap":
                                 if state["ap"] > 0:
                                     state["active_tactical"] = "Single Swap"
@@ -495,7 +495,7 @@ def render_player_column(target_is_p1):
                                 else:
                                     st.warning("⚠️ Insufficient AP!")
                                     
-                            # 4. Push 卡 (原 K 卡)
+                            # 4. Push (原 K 卡)
                             elif ctype == "Push":
                                 if state["ap"] > 0:
                                     state["active_tactical"] = "Push"
@@ -507,7 +507,7 @@ def render_player_column(target_is_p1):
                                 else:
                                     st.warning("⚠️ Insufficient AP!")
                                     
-                            # 5. Steal 卡 (新功能：稍后编写具体选择逻辑)
+                            # 5. Steal (新功能：稍后编写具体选择逻辑)
                             elif ctype == "Steal":
                                 if state["ap"] > 0:
                                     state["active_tactical"] = "Steal"
@@ -537,7 +537,7 @@ def render_player_column(target_is_p1):
         # --- 2. Staging Area ---
         st.markdown(f"**📥 {p_name}'s Staging Area**")
         if (
-            state["active_tactical"] == "K"
+            state["active_tactical"] == "Push"
             and can_act
             and target_is_p1 == state["tactical_player"]
         ):
@@ -562,7 +562,7 @@ def render_player_column(target_is_p1):
                     )
 
                     if (
-                        state["active_tactical"] == "K"
+                        state["active_tactical"] == "Push"
                         and can_act
                         and target_is_p1 == state["tactical_player"]
                     ):
@@ -588,7 +588,7 @@ def render_player_column(target_is_p1):
                             st.rerun()
 
                     elif (
-                        state["active_tactical"] == "Q"
+                        state["active_tactical"] == "Single Swap"
                         and can_act
                         and state["q_selected_own_card"] is None
                     ):
@@ -600,7 +600,7 @@ def render_player_column(target_is_p1):
                                 st.rerun()
 
                     elif (
-                        state["active_tactical"] == "Q"
+                        state["active_tactical"] == "Single Swap"
                         and can_act
                         and state["q_selected_own_card"] is not None
                     ):
@@ -634,6 +634,58 @@ def render_player_column(target_is_p1):
                                 check_game_over_and_settle(state)
                                 save_game(room_code, state)
                                 st.rerun()
+
+              # --- 1. Steal 按钮逻辑（放在对手暂存区卡片循环内） ---
+                    elif state["active_tactical"] == "Steal" and can_act and target_is_p1 != state["tactical_player"]:
+                        if st.button(f"Steal #{idx+1}", key=f"steal_{target_is_p1}_{idx}"):
+                            h_idx = state["tactical_hand_idx"]
+                            thief_is_p1 = state["tactical_player"]
+                            
+                            # 扣除手牌和AP
+                            (state["p1_hand"] if thief_is_p1 else state["p2_hand"]).pop(h_idx)
+                            state["ap"] -= 1
+
+                            # 把对方的牌拿过来并加到自己的暂存区
+                            stolen_card = staging.pop(idx)
+                            if thief_is_p1:
+                                state["p1_staging"].append(stolen_card)
+                                add_log(state, f"🕵️ Player 1 stole {stolen_card} from Player 2!")
+                                check_auto_same_color_match(state, True)
+                            else:
+                                state["p2_staging"].append(stolen_card)
+                                add_log(state, f"🕵️ Player 2 stole {stolen_card} from Player 1!")
+                                check_auto_same_color_match(state, False)
+
+                            # 清空战术状态并刷新
+                            state["active_tactical"] = None
+                            state["tactical_hand_idx"] = None
+                            state["tactical_player"] = None
+                            check_game_over_and_settle(state)
+                            save_game(room_code, state)
+                            st.rerun()
+
+                    # --- 2. Destroy 按钮逻辑（放在对手暂存区卡片循环内） ---
+                    elif state["active_tactical"] == "Destroy" and can_act and target_is_p1 != state["tactical_player"]:
+                        if st.button(f"Destroy #{idx+1}", key=f"destroy_{target_is_p1}_{idx}"):
+                            h_idx = state["tactical_hand_idx"]
+                            destroyer_is_p1 = state["tactical_player"]
+
+                            # 扣除手牌和AP
+                            (state["p1_hand"] if destroyer_is_p1 else state["p2_hand"]).pop(h_idx)
+                            state["ap"] -= 1
+
+                            # 直接从对方暂存区移除（销毁）
+                            destroyed_card = staging.pop(idx)
+                            add_log(state, f"💣 Player {'1' if destroyer_is_p1 else '2'} destroyed Player {'2' if destroyer_is_p1 else '1'}'s card {destroyed_card}!")
+
+                            # 清空战术状态并刷新
+                            state["active_tactical"] = None
+                            state["tactical_hand_idx"] = None
+                            state["tactical_player"] = None
+                            check_game_over_and_settle(state)
+                            save_game(room_code, state)
+                            st.rerun()
+
         else:
             st.caption("Staging area is empty")
 
