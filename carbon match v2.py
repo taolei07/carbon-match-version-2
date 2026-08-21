@@ -345,25 +345,143 @@ def add_log(state, msg):
 # ============================================================
 # Game Logic
 # ============================================================
-def check_game_over_and_settle(state, lang="EN"):
-    T = LANG_TEXT[lang]
-    POWER_CARDS = ["+1 AP", "All Swap", "Single Swap", "Push", "Steal", "Destroy", "Chaos Card"]
-    if len(state["deck"]) == 0 and not state["game_over"]:
-        p1_has_power = any(c[0] in POWER_CARDS for c in state["p1_hand"])
-        p2_has_power = any(c[0] in POWER_CARDS for c in state["p2_hand"])
-        both_staging_empty = (len(state["p1_staging"]) == 0) and (len(state["p2_staging"]) == 0)
+def _clear_tactical_state(state):
+    """清除未完成的战术选择状态。"""
+    state["active_tactical"] = None
+    state["tactical_hand_idx"] = None
+    state["tactical_player"] = None
+    state["q_selected_own_card"] = None
 
-        if (not p1_has_power and not p2_has_power) or both_staging_empty:
-            state["game_over"] = True
-            p1_s = state["p1_score"]
-            p2_s = state["p2_score"]
-            if p1_s > p2_s:
-                winner = PLAYER_NAMES[lang]["Player 1"]
-            elif p2_s > p1_s:
-                winner = PLAYER_NAMES[lang]["Player 2"]
-            else:
-                winner = PLAYER_NAMES[lang]["Draw"]
-            add_log(state, T["log_game_over"](p1_s, p2_s, winner))
+
+def _has_mixed_color_pair(staging):
+    """判断暂存区是否还有可以手动中和的黑红同编号组合。"""
+    cards_by_value = {}
+
+    for card in staging:
+        if len(card) >= 2 and card[1] in ["B", "R"]:
+            cards_by_value.setdefault(card[0], set()).add(card[1])
+
+    return any(
+        "B" in colors and "R" in colors
+        for colors in cards_by_value.values()
+    )
+
+
+def _has_valid_pending_target(state):
+    """判断当前等待中的战术卡是否仍然有目标。"""
+    active = state.get("active_tactical")
+    actor_is_p1 = state.get("tactical_player")
+
+    if active is None or actor_is_p1 is None:
+        return False
+
+    own_staging = (
+        state["p1_staging"] if actor_is_p1 else state["p2_staging"]
+    )
+    opponent_staging = (
+        state["p2_staging"] if actor_is_p1 else state["p1_staging"]
+    )
+    opponent_hand = (
+        state["p2_hand"] if actor_is_p1 else state["p1_hand"]
+    )
+
+    if active in ["Steal", "Destroy"]:
+        return len(opponent_hand) > 0
+
+    if active == "Push":
+        return len(own_staging) > 0
+
+    if active == "Single Swap":
+        if state.get("q_selected_own_card") is None:
+            return len(own_staging) > 0
+        return len(opponent_staging) > 0
+
+    return False
+
+
+def _has_progress_action(state, is_p1):
+    """判断指定玩家是否还有可以改变游戏状态的合法行动。"""
+    hand = state["p1_hand"] if is_p1 else state["p2_hand"]
+    own_staging = state["p1_staging"] if is_p1 else state["p2_staging"]
+    opponent_staging = state["p2_staging"] if is_p1 else state["p1_staging"]
+    opponent_hand = state["p2_hand"] if is_p1 else state["p1_hand"]
+
+    # 牌堆还有牌，玩家下一回合仍然可以抽牌。
+    if len(state["deck"]) > 0:
+        return True
+
+    # 暂存区还有黑红异色同编号组合，可以使用中和。
+    if _has_mixed_color_pair(own_staging):
+        return True
+
+    # +1 AP 仍然可以正常打出并从手牌移除。
+    if any(card[0] == "+1 AP" for card in hand):
+        return True
+
+    # All Swap 的原有执行逻辑不改；只有至少有暂存区卡牌时，
+    # 它才算是还有实际目标。
+    if any(card[0] == "All Swap" for card in hand):
+        if own_staging or opponent_staging:
+            return True
+
+    # Single Swap 需要双方暂存区都有牌。
+    if any(card[0] == "Single Swap" for card in hand):
+        if own_staging and opponent_staging:
+            return True
+
+    # Push 需要自己的暂存区有牌。
+    if any(card[0] == "Push" for card in hand):
+        if own_staging:
+            return True
+
+    # Steal 和 Destroy 需要对手手牌区有牌。
+    if any(card[0] in ["Steal", "Destroy"] for card in hand):
+        if opponent_hand:
+            return True
+
+    return False
+
+
+def check_game_over_and_settle(state, lang="EN"):
+    """检查所有无可继续行动的终局，并进行一次性结算。"""
+    T = LANG_TEXT[lang]
+
+    if state.get("game_over", False):
+        return False
+
+    state_changed = False
+
+    # 如果战术状态已经没有合法目标，例如 Destroy 目标手牌已为空，
+    # 自动清除卡住的选择状态，否则玩家会永远停留在等待状态。
+    if state.get("active_tactical") is not None:
+        if not _has_valid_pending_target(state):
+            _clear_tactical_state(state)
+            state_changed = True
+
+    # 牌堆未空时，玩家仍然可以继续抽牌，不应结算。
+    if len(state["deck"]) > 0:
+        return state_changed
+
+    # 如果任意一方仍有可改变游戏状态的合法行动，则暂不结算。
+    if _has_progress_action(state, True) or _has_progress_action(state, False):
+        return state_changed
+
+    # 到这里代表：牌堆为空，双方都没有可以继续推进游戏的行动。
+    state["game_over"] = True
+
+    p1_s = state["p1_score"]
+    p2_s = state["p2_score"]
+
+    if p1_s > p2_s:
+        winner = PLAYER_NAMES[lang]["Player 1"]
+    elif p2_s > p1_s:
+        winner = PLAYER_NAMES[lang]["Player 2"]
+    else:
+        winner = PLAYER_NAMES[lang]["Draw"]
+
+    add_log(state, T["log_game_over"](p1_s, p2_s, winner))
+    return True
+
 
 
 def check_auto_same_color_match(state, is_p1, lang="EN"):
@@ -511,6 +629,9 @@ my_player_display = PLAYER_NAMES[lang]["Player 1"] if my_player_is_p1 else PLAYE
 st_autorefresh(interval=2500, key="auto_refresh")
 
 state = load_game(room_code)
+
+if check_game_over_and_settle(state, lang):
+    save_game(room_code, state)
 
 # ============================================================
 # Header Layout
