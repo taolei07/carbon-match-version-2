@@ -809,16 +809,16 @@ def render_player_column(target_is_p1):
 
 
                 # ── 销毁对手手牌 ──
-                    elif (
-                        state["active_tactical"] == "Destroy"
-                        and target_is_p1 != state["tactical_player"]
-                    ):
-                        if st.button(
-                            T["destroy_btn"](h_idx),
-                            key=f"destroy_hand_{target_is_p1}_{h_idx}",
+                        elif (
+                            state["active_tactical"] == "Destroy"
+                            and target_is_p1 != state["tactical_player"]
                         ):
-                            destroyer_is_p1 = state["tactical_player"]
-                            my_hand = (
+                            if st.button(
+                                T["destroy_btn"](h_idx),
+                                key=f"destroy_hand_{target_is_p1}_{h_idx}",
+                            ):
+                                destroyer_is_p1 = state["tactical_player"]
+                                my_hand = (
                                 state["p1_hand"]
                                 if destroyer_is_p1
                                 else state["p2_hand"]
@@ -831,23 +831,23 @@ def render_player_column(target_is_p1):
                                 and 0 <= tactical_idx < len(my_hand)
                             ):
                                 my_hand.pop(tactical_idx)
-
+    
                         # 删除对手刚刚选中的手牌
-                            destroyed_card = hand.pop(h_idx)
-                            state["ap"] -= 1
+                                destroyed_card = hand.pop(h_idx)
+                                state["ap"] -= 1
 
                         # 你原本的 log_destroy 需要传入玩家编号，而不是玩家名称
-                            attacker_num = 1 if destroyer_is_p1 else 2
-                            victim_num = 2 if destroyer_is_p1 else 1
-                            add_log(
-                                state,
-                                T["log_destroy"](
-                                    attacker_num,
-                                    victim_num,
-                                    destroyed_card[0],
-                                ),
-                            )
-
+                                attacker_num = 1 if destroyer_is_p1 else 2
+                                victim_num = 2 if destroyer_is_p1 else 1
+                                add_log(
+                                    state,
+                                    T["log_destroy"](
+                                        attacker_num,
+                                        victim_num,
+                                        destroyed_card[0],
+                                    ),
+                                )
+    
                         # 清除 Destroy 的等待状态
                             state["active_tactical"] = None
                             state["tactical_hand_idx"] = None
