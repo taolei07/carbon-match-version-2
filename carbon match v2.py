@@ -820,18 +820,18 @@ def render_player_column(target_is_p1):
                             ):
                                 destroyer_is_p1 = state["tactical_player"]
                                 my_hand = (
-                                state["p1_hand"]
-                                if destroyer_is_p1
-                                else state["p2_hand"]
-                            )
+                                    state["p1_hand"]
+                                    if destroyer_is_p1
+                                    else state["p2_hand"]
+                                )
 
                         # 找到并删除自己手里的 Destroy 卡
-                            tactical_idx = state["tactical_hand_idx"]
-                            if (
-                                tactical_idx is not None
-                                and 0 <= tactical_idx < len(my_hand)
-                            ):
-                                my_hand.pop(tactical_idx)
+                                if (
+                                    state.get("tactical_hand_idx") is not None
+                                    and 0 <= state["tactical_hand_idx"] < len(my_hand)
+                                ):
+                                    my_hand.pop(state["tactical_hand_idx"])
+
     
                         # 删除对手刚刚选中的手牌
                                 destroyed_card = hand.pop(h_idx)
