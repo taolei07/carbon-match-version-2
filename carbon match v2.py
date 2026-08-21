@@ -850,14 +850,14 @@ def render_player_column(target_is_p1):
                                 )
     
                         # 清除 Destroy 的等待状态
-                            state["active_tactical"] = None
-                            state["tactical_hand_idx"] = None
-                            state["tactical_player"] = None
-                            state["q_selected_own_card"] = None
+                                state["active_tactical"] = None
+                                state["tactical_hand_idx"] = None
+                                state["tactical_player"] = None
+                                state["q_selected_own_card"] = None
 
-                            check_game_over_and_settle(state, lang)
-                            save_game(room_code, state)
-                            st.rerun()
+                                check_game_over_and_settle(state, lang)
+                                save_game(room_code, state)
+                                st.rerun()
 
 
             else:
