@@ -772,7 +772,7 @@ def render_player_column(target_is_p1):
                                     st.warning("⚠️ Insufficient AP!")
 
             # 情况 B：如果这是【对手】的手牌区，且我是行动玩家（正处于战术结算中），且该牌是功能卡
-                    elif can_act and not is_mine and is_power_card:
+                    elif can_act and not is_mine:
                 
                 # ── 偷取对手功能牌 ──
                         if state["active_tactical"] == "Steal" and target_is_p1 != state["tactical_player"]:
@@ -795,25 +795,64 @@ def render_player_column(target_is_p1):
                                 save_game(room_code, state)
                                 st.rerun()
 
-                # ── 销毁对手功能牌 ──
-                    elif state["active_tactical"] == "Destroy" and target_is_p1 != state["tactical_player"]:
-                            if st.button(T["destroy_btn"](h_idx), key=f"destroy_hand_{target_is_p1}_{h_idx}"):
-                                destroyer_is_p1 = state["tactical_player"]
-                        # 扣除自己手上的 Destroy 卡和 1 AP
-                                my_hand = state["p1_hand"] if destroyer_is_p1 else state["p2_hand"]
-                                my_hand.pop(state["tactical_hand_idx"])
-                                state["ap"] -= 1
-                        
-                        # 直接销毁对方手里的功能卡
-                                destroyed_card = hand.pop(h_idx)
-                        
-                                add_log(state, f"💣 Player {'1' if destroyer_is_p1 else '2'} destroyed opponent's power card [{destroyed_card[0]}]!")
-                                state["active_tactical"] = None
-                                state["tactical_hand_idx"] = None
-                                state["tactical_player"] = None
-                                check_game_over_and_settle(state, lang)
-                                save_game(room_code, state)
-                                st.rerun()
+                # ── 销毁对手手牌 ──
+                elif (
+                    state["active_tactical"] == "Destroy"
+                    and target_is_p1 != state["tactical_player"]
+                ):
+                    if st.button(
+                        T["destroy_btn"](h_idx),
+                        key=f"destroy_hand_{target_is_p1}_{h_idx}",
+                    ):
+                        destroyer_is_p1 = state["tactical_player"]
+                        my_hand = (
+                            state["p1_hand"]
+                            if destroyer_is_p1
+                            else state["p2_hand"]
+                        )
+
+                        # 删除自己手里的 Destroy 卡
+                        tactical_idx = state["tactical_hand_idx"]
+                        if (
+                            tactical_idx is not None
+                            and 0 <= tactical_idx < len(my_hand)
+                        ):
+                            my_hand.pop(tactical_idx)
+
+                        # 删除对手被选择的手牌
+                        destroyed_card = hand.pop(h_idx)
+                        state["ap"] -= 1
+
+                        destroyer_name = (
+                            PLAYER_NAMES[lang]["Player 1"]
+                            if destroyer_is_p1
+                            else PLAYER_NAMES[lang]["Player 2"]
+                        )
+                        victim_name = (
+                            PLAYER_NAMES[lang]["Player 2"]
+                            if destroyer_is_p1
+                            else PLAYER_NAMES[lang]["Player 1"]
+                        )
+
+                        add_log(
+                            state,
+                            T["log_destroy"](
+                                destroyer_name,
+                                victim_name,
+                                destroyed_card[0],
+                            ),
+                        )
+
+                        # 清除 Destroy 的等待状态
+                        state["active_tactical"] = None
+                        state["tactical_hand_idx"] = None
+                        state["tactical_player"] = None
+                        state["q_selected_own_card"] = None
+
+                        check_game_over_and_settle(state, lang)
+                        save_game(room_code, state)
+                        st.rerun()
+
             else:
                 st.caption(T["hand_empty"])
 
