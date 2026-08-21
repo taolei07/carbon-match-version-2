@@ -744,7 +744,7 @@ def render_player_column(target_is_p1):
                                     add_log(state, T["log_push_prepare"](p_name_display))
                                     save_game(room_code, state)
                                     st.rerun()
-                                else:
+                               else:
                                     st.warning(T["ap_warn"])
 
                     # Steal — costs 1 AP
