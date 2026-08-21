@@ -671,6 +671,7 @@ def render_player_column(target_is_p1):
                     next_display = PLAYER_NAMES[lang]["Player 2"] if target_is_p1 else PLAYER_NAMES[lang]["Player 1"]
                     state["active_tactical"] = None
                     state["tactical_player"] = None
+                    state["tactical_hand_idx"] = None
                     state["q_selected_own_card"] = None
                     add_log(state, T["log_end_turn"](next_display))
                     save_game(room_code, state)
