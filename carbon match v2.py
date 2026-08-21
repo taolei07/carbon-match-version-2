@@ -680,6 +680,14 @@ def render_player_column(target_is_p1):
 
         # ── 1. Hand Cards ──
         st.markdown(T["hand_title"](p_name_display))
+        if (
+            can_act
+            and not is_mine
+            and target_is_p1 != state["tactical_player"]
+            and state["active_tactical"] == "Destroy"
+        ):
+            st.info(T["destroy_hint"])
+
         if hand:
             cols_num = max(1, min(len(hand), 4))
             h_cols = st.columns(cols_num)
@@ -871,8 +879,6 @@ def render_player_column(target_is_p1):
                 st.info(T["single_swap_hint_opp"])
         elif state["active_tactical"] == "Steal" and can_act and target_is_p1 != state["tactical_player"]:
             st.info(T["steal_hint"])
-        elif state["active_tactical"] == "Destroy" and can_act and target_is_p1 != state["tactical_player"]:
-            st.info(T["destroy_hint"])
 
         if staging:
             cols_num = max(1, min(len(staging), 4))
