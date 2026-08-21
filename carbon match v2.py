@@ -65,7 +65,7 @@ LANG_TEXT = {
         "single_swap_hint_own": "👉 [Single Swap Active] Select a card from your staging area:",
         "single_swap_hint_opp": "👉 [Single Swap Active] Click a card in opponent's staging area:",
         "steal_hint": "👉 [Steal Active] Click a card in opponent's staging area to steal:",
-        "destroy_hint": "👉 [Destroy Active] Click a card in opponent's staging area to destroy:",
+        "destroy_hint": "👉 [Destroy Active] Click a card in opponent's hand to destroy:",
         "ap_warn": "⚠️ Insufficient AP!",
         # Card play buttons
         "play_btn": lambda i: f"Play #{i+1}",
@@ -153,7 +153,7 @@ LANG_TEXT = {
         "single_swap_hint_own": "👉 【单卡交换激活】选择你暂存区的一张牌：",
         "single_swap_hint_opp": "👉 【单卡交换激活】点击对手暂存区的一张牌进行交换：",
         "steal_hint": "👉 【偷取激活】点击对手暂存区的牌来偷取：",
-        "destroy_hint": "👉 【销毁激活】点击对手暂存区的牌来销毁：",
+        "destroy_hint": "👉 【销毁激活】点击对手手牌区的一张牌来销毁：",
         "ap_warn": "⚠️ 行动点不足！",
         # Card play buttons
         "play_btn": lambda i: f"出牌 #{i+1}",
