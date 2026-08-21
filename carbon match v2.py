@@ -732,7 +732,7 @@ def render_player_column(target_is_p1):
                                     add_log(state, T["log_single_swap_prepare"](p_name_display))
                                     save_game(room_code, state)
                                     st.rerun()
-                                  else:
+                                else:
                                     st.warning(T["ap_warn"])
 
                     # Push — costs 1 AP, send own staging card to opponent
@@ -744,7 +744,7 @@ def render_player_column(target_is_p1):
                                     add_log(state, T["log_push_prepare"](p_name_display))
                                     save_game(room_code, state)
                                     st.rerun()
-                                  else:
+                                else:
                                     st.warning(T["ap_warn"])
 
                     # Steal — costs 1 AP
@@ -756,7 +756,7 @@ def render_player_column(target_is_p1):
                                     add_log(state, f"🎯 {p_name_display} preparing Steal: select a power card from opponent's hand.")
                                     save_game(room_code, state)
                                     st.rerun()
-                                   else:
+                                else:
                                     st.warning("⚠️ Insufficient AP!")
 
                     # Destroy — costs 1 AP
