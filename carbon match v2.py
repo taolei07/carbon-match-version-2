@@ -634,6 +634,33 @@ state = load_game(room_code)
 if check_game_over_and_settle(state, lang):
     save_game(room_code, state)
 
+# ── Background Music ──
+assets_dir = Path(__file__).parent / "assets"
+
+music_files = sorted(assets_dir.glob("*.mp3"))
+
+if music_files:
+    music_names = [music_file.stem for music_file in music_files]
+
+    selected_music_name = st.selectbox(
+        "🎵 选择背景音乐",
+        music_names,
+        key="selected_background_music",
+    )
+
+    selected_music = next(
+        music_file
+        for music_file in music_files
+        if music_file.stem == selected_music_name
+    )
+
+    st.audio(
+        selected_music.read_bytes(),
+        format="audio/mp3",
+    )
+else:
+    st.warning("assets 文件夹中没有找到 MP3 音乐文件。")
+
 # ============================================================
 # Header Layout
 # ============================================================
