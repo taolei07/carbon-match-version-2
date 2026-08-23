@@ -3,6 +3,7 @@ import streamlit as st
 from supabase import create_client, Client
 from streamlit_autorefresh import st_autorefresh
 import time
+from pathlib import Path
 
 # ============================================================
 # Page Setup
