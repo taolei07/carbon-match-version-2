@@ -629,6 +629,85 @@ def get_button_sfx_data_uri():
 
     return f"data:{mime_type};base64,{encoded_audio}"
 
+def install_button_sound():
+    click_uri = get_button_sfx_data_uri()
+
+    if not click_uri:
+        st.warning("找不到 assets/sfx/button-click.mp3")
+        return
+
+    audio_html = """
+    <script>
+    (() => {
+        const hostWindow = window.parent || window;
+        const hostDocument = hostWindow.document;
+        const clickSrc = __CLICK_SRC__;
+
+        // 防止 Streamlit 刷新后重复安装监听器
+        if (hostWindow.__carbonMatchButtonSound) {
+            return;
+        }
+
+        const clickAudio = new hostWindow.Audio(clickSrc);
+        clickAudio.preload = "auto";
+        clickAudio.volume = 0.55;
+
+        function playClickSound() {
+            clickAudio.currentTime = 0;
+            const playPromise = clickAudio.play();
+
+            if (playPromise && playPromise.catch) {
+                playPromise.catch(() => {});
+            }
+        }
+
+        function handleMouseClick(event) {
+            const button = event.target.closest?.("button");
+
+            if (button) {
+                playClickSound();
+            }
+        }
+
+        function handleKeyboardClick(event) {
+            if (event.key !== "Enter" && event.key !== " ") {
+                return;
+            }
+
+            const button = event.target.closest?.("button");
+
+            if (button) {
+                playClickSound();
+            }
+        }
+
+        hostDocument.addEventListener(
+            "pointerdown",
+            handleMouseClick,
+            true
+        );
+
+        hostDocument.addEventListener(
+            "keydown",
+            handleKeyboardClick,
+            true
+        );
+
+        hostWindow.__carbonMatchButtonSound = true;
+    })();
+    </script>
+    """
+
+    audio_html = audio_html.replace(
+        "__CLICK_SRC__",
+        json.dumps(click_uri)
+    )
+
+    components.html(audio_html, height=0, width=0)
+
+
+install_button_sound()
+
 if st.session_state.room_code is None:
     with _lang_col1:
         st.title(T["page_title"])
