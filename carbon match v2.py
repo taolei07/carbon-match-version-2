@@ -4,6 +4,11 @@ from supabase import create_client, Client
 from streamlit_autorefresh import st_autorefresh
 import time
 from pathlib import Path
+import base64
+import json
+import mimetypes
+import streamlit.components.v1 as components
+
 
 # ============================================================
 # Page Setup
