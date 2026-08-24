@@ -770,14 +770,6 @@ with top_l:
     st.title(T["page_title"])
     st.caption(T["room_header"](room_code, my_player_display))
 with top_r:
-    st.selectbox(
-        T["lang_label"],
-        options=["EN", "中文"],
-        index=0 if lang == "EN" else 1,
-        key="lang_header",
-        label_visibility="collapsed",
-        on_change=lambda: None,  # handled by top selectbox
-    )
     if st.button(T["leave_room"]):
         st.session_state.room_code = None
         st.session_state.my_player_is_p1 = None
