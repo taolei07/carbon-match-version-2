@@ -612,6 +612,23 @@ with _lang_col2:
 lang = st.session_state.lang
 T = LANG_TEXT[lang]
 
+# ============================================================
+# Button Sound Effect
+# ============================================================
+BUTTON_SFX_PATH = Path(__file__).parent / "assets" / "sfx" / "button-click.mp3"
+
+
+def get_button_sfx_data_uri():
+    if not BUTTON_SFX_PATH.exists():
+        return ""
+
+    mime_type = mimetypes.guess_type(BUTTON_SFX_PATH.name)[0] or "audio/mpeg"
+    encoded_audio = base64.b64encode(
+        BUTTON_SFX_PATH.read_bytes()
+    ).decode("ascii")
+
+    return f"data:{mime_type};base64,{encoded_audio}"
+
 if st.session_state.room_code is None:
     with _lang_col1:
         st.title(T["page_title"])
