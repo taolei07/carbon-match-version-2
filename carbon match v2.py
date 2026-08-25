@@ -669,6 +669,14 @@ def install_button_sound():
         clickAudio.volume = 0.55;
 
         function playClickSound() {
+            clickAudio.currentTime = 0;
+            const playPromise = clickAudio.play();
+
+            if (playPromise && playPromise.catch) {
+                playPromise.catch(() => {});
+            }
+        }
+
         function playPowerCardSound() {
             powerAudio.currentTime = 0;
             const playPromise = powerAudio.play();
@@ -677,6 +685,7 @@ def install_button_sound():
                 playPromise.catch(() => {});
             }
         }
+
         function playVictoryMusic() {
             if (hostWindow.__carbonMatchVictoryPlayed) {
                 return;
@@ -684,7 +693,6 @@ def install_button_sound():
 
             hostWindow.__carbonMatchVictoryPlayed = true;
 
-                    // 停止原本正在播放的普通 BGM
             hostDocument.querySelectorAll("audio").forEach((audio) => {
                 audio.pause();
                 audio.currentTime = 0;
@@ -704,17 +712,10 @@ def install_button_sound():
             if (buttonText.includes("⚡")) {
                 playPowerCardSound();
             } else {
-                playClickSound(button);
+                playClickSound();
             }
         }
 
-            clickAudio.currentTime = 0;
-            const playPromise = clickAudio.play();
-
-            if (playPromise && playPromise.catch) {
-                playPromise.catch(() => {});
-            }
-        }
 
         function handleMouseClick(event) {
             const button = event.target.closest?.("button");
