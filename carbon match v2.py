@@ -661,6 +661,9 @@ def install_button_sound():
         const powerAudio = new hostWindow.Audio(powerSrc);
         const victoryAudio = new hostWindow.Audio(victorySrc);
         victoryAudio.loop = false;
+        victoryAudio.preload = "auto";
+        victoryAudio.volume = 0.8;
+
 
         clickAudio.preload = "auto";
         clickAudio.volume = 0.55;
@@ -669,6 +672,26 @@ def install_button_sound():
         function playPowerCardSound() {
             powerAudio.currentTime = 0;
             const playPromise = powerAudio.play();
+
+            if (playPromise && playPromise.catch) {
+                playPromise.catch(() => {});
+            }
+        }
+        function playVictoryMusic() {
+            if (hostWindow.__carbonMatchVictoryPlayed) {
+                return;
+            }
+
+            hostWindow.__carbonMatchVictoryPlayed = true;
+
+                    // 停止原本正在播放的普通 BGM
+            hostDocument.querySelectorAll("audio").forEach((audio) => {
+                audio.pause();
+                audio.currentTime = 0;
+            });
+
+            victoryAudio.currentTime = 0;
+            const playPromise = victoryAudio.play();
 
             if (playPromise && playPromise.catch) {
                 playPromise.catch(() => {});
@@ -725,7 +748,13 @@ def install_button_sound():
             true
         );
 
-        hostWindow.__carbonMatchButtonSound = true;
+        hostWindow.__carbonMatchButtonSound = {
+            clickAudio,
+            powerAudio,
+            victoryAudio,
+            playVictoryMusic,
+        };
+
     })();
     </script>
     """
@@ -780,6 +809,18 @@ state = load_game(room_code)
 if check_game_over_and_settle(state, lang):
     save_game(room_code, state)
 
+
+    components.html(
+        """
+        <script>
+        if (window.parent.__carbonMatchButtonSound) {
+            window.parent.__carbonMatchButtonSound.playVictoryMusic();
+        }
+        </script>
+        """,
+        height=0,
+        width=0,
+    )
 # ── Background Music ──
 assets_dir = Path(__file__).parent / "assets"
 
@@ -839,6 +880,15 @@ top1.metric(T["current_turn"], PLAYER_NAMES[lang].get(state["turn"], state["turn
 top2.metric(T["current_ap"], f"{state['ap']} / 2")
 top3.metric(T["score_label"], f"P1: {state['p1_score']} | P2: {state['p2_score']}")
 if top4.button(T["restart"], use_container_width=True):
+    components.html(
+        """
+        <script>
+        window.parent.__carbonMatchVictoryPlayed = false;
+        </script>
+        """,
+        height=0,
+        width=0,
+    )
     save_game(room_code, initial_state(lang))
     st.rerun()
 
