@@ -720,7 +720,7 @@ def install_button_sound():
             const button = event.target.closest?.("button");
 
             if (button) {
-                playClickSound(button);
+                playButtonSound(button);
             }
         }
 
@@ -732,7 +732,7 @@ def install_button_sound():
             const button = event.target.closest?.("button");
 
             if (button) {
-                playClickSound();
+                playButtonSound(button);
             }
         }
 
