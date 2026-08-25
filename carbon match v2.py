@@ -616,21 +616,27 @@ T = LANG_TEXT[lang]
 # Button Sound Effect
 # ============================================================
 BUTTON_SFX_PATH = Path(__file__).parent / "assets" / "sfx" / "button-click.mp3"
+VICTORY_BGM_PATH = Path(__file__).parent / "assets" / "sfx" / "victory.mp3"
+POWER_CARD_SFX_PATH = Path(__file__).parent / "assets" / "sfx" / "power-card.mp3"
 
 
-def get_button_sfx_data_uri():
-    if not BUTTON_SFX_PATH.exists():
+def get_audio_data_uri(audio_path):
+    if not audio_path.exists():
         return ""
 
-    mime_type = mimetypes.guess_type(BUTTON_SFX_PATH.name)[0] or "audio/mpeg"
+    mime_type = mimetypes.guess_type(audio_path.name)[0] or "audio/mpeg"
     encoded_audio = base64.b64encode(
-        BUTTON_SFX_PATH.read_bytes()
+        audio_path.read_bytes()
     ).decode("ascii")
 
     return f"data:{mime_type};base64,{encoded_audio}"
 
+
 def install_button_sound():
-    click_uri = get_button_sfx_data_uri()
+    click_uri = get_audio_data_uri(BUTTON_SFX_PATH)
+    power_uri = get_audio_data_uri(POWER_CARD_SFX_PATH)
+    victory_uri = get_audio_data_uri(VICTORY_BGM_PATH)
+
 
     if not click_uri:
         st.warning("找不到 assets/sfx/button-click.mp3")
@@ -642,6 +648,9 @@ def install_button_sound():
         const hostWindow = window.parent || window;
         const hostDocument = hostWindow.document;
         const clickSrc = __CLICK_SRC__;
+        const powerSrc = __POWER_SRC__;
+        const victorySrc = __VICTORY_SRC__;
+
 
         // 防止 Streamlit 刷新后重复安装监听器
         if (hostWindow.__carbonMatchButtonSound) {
@@ -649,10 +658,33 @@ def install_button_sound():
         }
 
         const clickAudio = new hostWindow.Audio(clickSrc);
+        const powerAudio = new hostWindow.Audio(powerSrc);
+        const victoryAudio = new hostWindow.Audio(victorySrc);
+        victoryAudio.loop = false;
+
         clickAudio.preload = "auto";
         clickAudio.volume = 0.55;
 
         function playClickSound() {
+        function playPowerCardSound() {
+            powerAudio.currentTime = 0;
+            const playPromise = powerAudio.play();
+
+            if (playPromise && playPromise.catch) {
+                playPromise.catch(() => {});
+            }
+        }
+
+        function playButtonSound(button) {
+            const buttonText = button.innerText || "";
+
+            if (buttonText.includes("⚡")) {
+                playPowerCardSound();
+            } else {
+                playClickSound(button);
+            }
+        }
+
             clickAudio.currentTime = 0;
             const playPromise = clickAudio.play();
 
@@ -665,7 +697,7 @@ def install_button_sound():
             const button = event.target.closest?.("button");
 
             if (button) {
-                playClickSound();
+                playClickSound(button);
             }
         }
 
@@ -702,6 +734,19 @@ def install_button_sound():
         "__CLICK_SRC__",
         json.dumps(click_uri)
     )
+    
+    audio_html = audio_html.replace(
+    "__POWER_SRC__",
+    json.dumps(power_uri)
+    )
+    
+    audio_html = audio_html.replace(
+    "__VICTORY_SRC__",
+    json.dumps(victory_uri)
+    )
+
+
+
 
     components.html(audio_html, height=0, width=0)
 
@@ -943,7 +988,12 @@ def render_player_column(target_is_p1):
 
             # 情况 A：如果这是我自己的手牌区，且轮到我的回合，渲染「出牌」按钮
                     if is_mine and can_act:
-                        if st.button(T["play_btn"](h_idx), key=f"play_{p_name_key}_{h_idx}"):
+                        play_button_text = T["play_btn"](h_idx)
+                        if is_power_card:
+                            play_button_text = f"⚡ {play_button_text}"
+
+                        if st.button(play_button_text, key=f"play_{p_name_key}_{h_idx}"):
+
                             ctype = hcard[0]
 
                     # +1 AP — no AP cost, immediate effect
